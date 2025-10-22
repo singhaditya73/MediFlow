@@ -1,0 +1,49 @@
+# Virtual environments
+my_env/
+venv/
+ENV/
+
+# Dataset and output folders
+MIMIC -III (10000 patients)/
+MIMIC*/
+pipeline_output/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Python
+__pycache__/
+*.pyc
+
+# Common data / binary files (large)
+*.csv
+*.tsv
+*.h5
+*.hdf5
+*.npz
+*.npy
+*.sqlite3
+*.db
+*.tar
+*.tar.gz
+*.zip
+*.gz
+*.nii
+*.parquet
+
+# Wheels
+*.whl
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE/editor
+.vscode/
+
+# Build/dist
+build/
+dist/
+
+# Keep notebooks tracked (do NOT ignore .ipynb files)
+!*.ipynb
