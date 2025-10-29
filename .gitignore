@@ -1,3 +1,7 @@
-node_modules/
-.env
-.next
+.ipynb_checkpoints/
+temp*
+*_report.pdf
+*_custom.json
+*_fhir.json
+*.pyc
+__pycache__/
