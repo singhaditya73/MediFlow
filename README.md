@@ -50,8 +50,10 @@ Feel free to use, contribute, and share!
 ⸻
 
 ## Contributors ✨
-	•	Abhishek Jain 
+
 	•	Aditya Singh
+	•	Abhishek Jain 
+	•	Aditya Veer Singh
 
 ⸻
 
