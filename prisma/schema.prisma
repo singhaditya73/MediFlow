@@ -1,0 +1,115 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ResourceType {
+  DiagnosticReport
+  Patient
+  Observation
+  MedicationRequest
+  Condition
+  Procedure
+  AllergyIntolerance
+  Immunization
+  Other
+}
+
+enum AccessLevel {
+  Read
+  Write
+  Full
+}
+
+model User {
+  id            String          @id @default(cuid())
+  walletAddress String          @unique // Ethereum wallet address
+  name          String
+  aadhaarNumber String?         @unique
+  phoneNumber   String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  
+  // Relations
+  fhirRecords   FhirRecord[]
+  accessGrants  AccessControl[] @relation("AccessGranter")
+  accessReceived AccessControl[] @relation("AccessReceiver")
+  auditLogs     AuditLog[]
+}
+
+model FhirRecord {
+  id              String       @id @default(cuid())
+  userId          String
+  resourceType    ResourceType
+  fhirData        Json         // Store the complete FHIR JSON
+  originalFileUrl String?      // URL to original file (IPFS hash)
+  ipfsHash        String?      // IPFS hash for decentralized storage
+  blockchainTxHash String?     // Blockchain transaction hash
+  extractedText   String?      @db.Text
+  metadata        Json?        // Additional metadata
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  
+  // Relations
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessControls  AccessControl[]
+  auditLogs       AuditLog[]
+  
+  @@index([userId])
+  @@index([resourceType])
+  @@index([createdAt])
+}
+
+model AccessControl {
+  id              String      @id @default(cuid())
+  recordId        String
+  granterId       String      // User who owns the data
+  receiverId      String      // User who gets access
+  accessLevel     AccessLevel @default(Read)
+  isActive        Boolean     @default(true)
+  expiresAt       DateTime?   // Optional expiration date
+  smartContractAddress String? // Smart contract managing this access
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  
+  // Relations
+  record          FhirRecord  @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  granter         User        @relation("AccessGranter", fields: [granterId], references: [id], onDelete: Cascade)
+  receiver        User        @relation("AccessReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  
+  @@unique([recordId, receiverId])
+  @@index([granterId])
+  @@index([receiverId])
+  @@index([recordId])
+}
+
+model AuditLog {
+  id              String      @id @default(cuid())
+  userId          String
+  recordId        String?
+  action          String      // "view", "create", "update", "delete", "grant_access", "revoke_access"
+  ipAddress       String?
+  userAgent       String?
+  blockchainTxHash String?    // Blockchain transaction for immutable audit trail
+  metadata        Json?
+  createdAt       DateTime    @default(now())
+  
+  // Relations
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  record          FhirRecord? @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([recordId])
+  @@index([createdAt])
+  @@index([action])
+}
