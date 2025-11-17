@@ -6,12 +6,12 @@ import { prismaClient } from "@/lib/db";
 export async function GET() {
   try {
     const session = await getServerSession();
-    if (!session || !session.user?.email) {
+    if (!session || !session.user?.name) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const user = await prismaClient.user.findUnique({
-      where: { email: session.user.email },
+    const user = await prismaClient.user.findFirst({
+      where: { walletAddress: session.user.name }, // Using wallet address
     });
 
     if (!user) {
@@ -27,7 +27,7 @@ export async function GET() {
         receiver: {
           select: {
             id: true,
-            email: true,
+            walletAddress: true,
             name: true,
           },
         },
@@ -61,12 +61,12 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession();
-    if (!session || !session.user?.email) {
+    if (!session || !session.user?.name) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const user = await prismaClient.user.findUnique({
-      where: { email: session.user.email },
+    const user = await prismaClient.user.findFirst({
+      where: { walletAddress: session.user.name },
     });
 
     if (!user) {
@@ -74,11 +74,23 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { recordId, receiverEmail, accessLevel = "Read", expiresAt } = body;
+    const { 
+      recordId, 
+      receiverAddress,
+      receiverWalletAddress, 
+      accessLevel = "read", 
+      expiresAt,
+      blockchainTxHash,
+      ipfsHash,
+      fileName
+    } = body;
 
-    if (!recordId || !receiverEmail) {
+    // Support both receiverAddress and receiverWalletAddress for flexibility
+    const receiverWallet = receiverAddress || receiverWalletAddress;
+
+    if (!recordId || !receiverWallet) {
       return NextResponse.json(
-        { error: "Record ID and receiver email are required" },
+        { error: "Record ID and receiver wallet address are required" },
         { status: 400 }
       );
     }
@@ -98,16 +110,20 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Find receiver user
-    const receiver = await prismaClient.user.findUnique({
-      where: { email: receiverEmail },
+    // Find receiver user by wallet address
+    let receiver = await prismaClient.user.findFirst({
+      where: { walletAddress: receiverWallet },
     });
 
+    // If receiver doesn't exist in database, create placeholder entry
     if (!receiver) {
-      return NextResponse.json(
-        { error: "Receiver user not found" },
-        { status: 404 }
-      );
+      receiver = await prismaClient.user.create({
+        data: {
+          walletAddress: receiverWallet,
+          name: `User ${receiverWallet.slice(0, 6)}...${receiverWallet.slice(-4)}`,
+          // User will be properly created when they first sign in
+        },
+      });
     }
 
     // Create or update access control
@@ -135,23 +151,28 @@ export async function POST(req: NextRequest) {
         receiver: {
           select: {
             id: true,
-            email: true,
+            walletAddress: true,
             name: true,
           },
         },
       },
     });
 
-    // Create audit log
+    // Create audit log with blockchain reference
     await prismaClient.auditLog.create({
       data: {
         userId: user.id,
         recordId: recordId,
         action: "grant_access",
+        blockchainTxHash: blockchainTxHash || null,
         metadata: {
           receiverId: receiver.id,
-          receiverEmail: receiverEmail,
+          receiverWalletAddress: receiverWallet,
           accessLevel: accessLevel,
+          expiresAt: expiresAt || null,
+          ipfsHash: ipfsHash || null,
+          fileName: fileName || null,
+          timestamp: new Date().toISOString(),
         },
       },
     });

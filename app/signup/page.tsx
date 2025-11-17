@@ -41,13 +41,13 @@ export default function SignupPage() {
     try {
       // Check if Ethereum wallet is installed
       if (typeof window === 'undefined') {
-        setError('Please use a web browser to connect your wallet');
+        setError('⚠️ Please use a web browser to connect your wallet');
         setIsLoading(false);
         return;
       }
 
       if (!window.ethereum) {
-        setError('MetaMask not detected. Please install MetaMask extension from metamask.io');
+        setError('❌ MetaMask not detected. Please install MetaMask extension from metamask.io');
         window.open('https://metamask.io/download/', '_blank');
         setIsLoading(false);
         return;
@@ -55,32 +55,79 @@ export default function SignupPage() {
 
       // Check if MetaMask is installed
       if (!window.ethereum.isMetaMask) {
-        setError('Please use MetaMask wallet for the best experience');
+        console.warn('Non-MetaMask wallet detected');
+        setError('⚠️ Please use MetaMask wallet for the best experience');
       }
 
-      // Request account access
-      const accounts = await window.ethereum.request({
-        method: 'eth_requestAccounts',
-      });
+      console.log('📡 Requesting account access...');
+      
+      // Request account access with error handling
+      let accounts;
+      try {
+        accounts = await window.ethereum.request({
+          method: 'eth_requestAccounts',
+        });
+      } catch (reqError: unknown) {
+        const error = reqError as { code?: number; message?: string };
+        if (error.code === 4001) {
+          throw new Error('You rejected the connection request. Please try again.');
+        } else if (error.code === -32002) {
+          throw new Error('Connection request already pending. Please check MetaMask.');
+        }
+        throw reqError;
+      }
 
       if (!accounts || accounts.length === 0) {
-        setError('No accounts found. Please check your wallet.');
+        setError('❌ No accounts found. Please unlock your wallet and try again.');
         setIsLoading(false);
         return;
       }
 
       const address = accounts[0];
+      console.log('✅ Connected to wallet:', address);
       setWalletAddress(address);
 
-      // Switch to localhost network (Anvil runs on chainId 31337)
+      // Check current network
+      const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+      console.log('Current network:', chainId);
+
+      // Try to switch to localhost or Sepolia
       try {
-        await window.ethereum.request({
-          method: 'wallet_switchEthereumChain',
-          params: [{ chainId: '0x7A69' }], // 31337 in hex
-        });
-      } catch (switchError: any) {
+        // Check if already on localhost (0x7A69 = 31337) or Sepolia (0xaa36a7 = 11155111)
+        if (chainId !== '0x7A69' && chainId !== '0xaa36a7') {
+          console.log('🔄 Attempting to switch network...');
+          
+          // Try Sepolia first
+          try {
+            await window.ethereum.request({
+              method: 'wallet_switchEthereumChain',
+              params: [{ chainId: '0xaa36a7' }], // Sepolia
+            });
+            console.log('✅ Switched to Sepolia network');
+          } catch (sepoliaError: unknown) {
+            const error = sepoliaError as { code?: number };
+            // If Sepolia not available, try localhost
+            if (error.code === 4902) {
+              console.log('Sepolia not found, trying localhost...');
+              await window.ethereum.request({
+                method: 'wallet_switchEthereumChain',
+                params: [{ chainId: '0x7A69' }], // Localhost
+              });
+              console.log('✅ Switched to Localhost network');
+            } else {
+              throw sepoliaError;
+            }
+          }
+        } else {
+          console.log('✅ Already on correct network');
+        }
+      } catch (switchError: unknown) {
+        const error = switchError as { code?: number; message?: string };
+        console.warn('Network switch error:', switchError);
+        
         // This error code indicates that the chain has not been added to MetaMask
-        if (switchError.code === 4902) {
+        if (error.code === 4902) {
+          console.log('⚠️ Network not found, attempting to add...');
           try {
             await window.ethereum.request({
               method: 'wallet_addEthereumChain',
@@ -97,16 +144,33 @@ export default function SignupPage() {
                 },
               ],
             });
-          } catch (addError) {
+            console.log('✅ Network added successfully');
+          } catch (addError: unknown) {
             console.error('Failed to add network:', addError);
-            setError('Please manually add Localhost network to MetaMask (Chain ID: 31337, RPC: http://127.0.0.1:8545)');
+            setError(
+              '⚠️ Could not add network automatically.\n\n' +
+              'Please manually add one of these networks:\n' +
+              '• Sepolia Testnet (Chain ID: 11155111)\n' +
+              '• Localhost (Chain ID: 31337, RPC: http://127.0.0.1:8545)'
+            );
             setIsLoading(false);
             return;
           }
+        } else if (error.code === 4001) {
+          setError('❌ You rejected the network switch request.');
+          setIsLoading(false);
+          return;
         } else {
-          console.warn('Network switch error:', switchError);
+          console.warn('Network switch failed:', error.message);
+          setError(
+            '⚠️ Could not switch network. Please manually switch to:\n' +
+            '• Sepolia Testnet, or\n' +
+            '• Localhost (Chain ID: 31337)'
+          );
         }
       }
+
+      console.log('✅ Network check complete');
 
       // Check if user has set name for this wallet before
       const savedName = localStorage.getItem(`userName_${address.toLowerCase()}`);
@@ -123,11 +187,24 @@ export default function SignupPage() {
       // Create a message to sign (proves wallet ownership)
       const message = `Sign this message to authenticate with MediFlow.\n\nWallet: ${address}\nName: ${finalName}\nTimestamp: ${Date.now()}`;
 
-      // Request signature
-      const signature = await window.ethereum.request({
-        method: 'personal_sign',
-        params: [message, address],
-      });
+      console.log('📝 Requesting signature...');
+      
+      // Request signature with error handling
+      let signature;
+      try {
+        signature = await window.ethereum.request({
+          method: 'personal_sign',
+          params: [message, address],
+        });
+        console.log('✅ Signature received');
+      } catch (signError: unknown) {
+        const error = signError as { code?: number; message?: string };
+        if (error.code === 4001) {
+          throw new Error('You rejected the signature request. Signature is required to verify wallet ownership.');
+        }
+        console.error('Signature error:', signError);
+        throw new Error('Failed to sign message. Please try again.');
+      }
 
       // Store user data locally (no database needed!)
       const userData = {
@@ -136,6 +213,7 @@ export default function SignupPage() {
         createdAt: new Date().toISOString(),
       };
 
+      console.log('💾 Saving user data...');
       localStorage.setItem('walletAddress', address.toLowerCase());
       localStorage.setItem('userName', finalName);
       localStorage.setItem(`userName_${address.toLowerCase()}`, finalName);
@@ -143,17 +221,46 @@ export default function SignupPage() {
       localStorage.setItem('signature', signature);
       localStorage.setItem('loginTimestamp', Date.now().toString());
 
+      console.log('✅ Authentication complete!');
+      console.log('🚀 Redirecting to dashboard...');
+      
       // Redirect to dashboard (use replace to prevent back button issues)
       router.replace('/dashboard');
       
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Wallet connection error:', err);
-      if (err.code === 4001) {
-        setError('You rejected the connection request. Please try again.');
-      } else if (err.code === -32002) {
-        setError('Connection request already pending. Please check MetaMask.');
+      
+      const error = err as { code?: number; message?: string };
+      
+      // Handle specific MetaMask error codes
+      if (error.code === 4001) {
+        // User rejected the request
+        setError('❌ Connection rejected. You cancelled the request in MetaMask.');
+      } else if (error.code === -32002) {
+        // Request already pending
+        setError('⏳ Request pending. Please check MetaMask - there may be a pending request waiting for your approval.');
+      } else if (error.code === -32603) {
+        // Internal error
+        setError('❌ MetaMask internal error. Please try restarting MetaMask.');
+      } else if (error.message?.includes('rejected the signature') || error.message?.includes('Signature is required')) {
+        setError('❌ You rejected the signature request. Signature is required to verify wallet ownership.');
+      } else if (error.message?.includes('Failed to sign')) {
+        setError('❌ Failed to sign message. Please try again.');
+      } else if (error.message?.includes('Already processing')) {
+        setError('⏳ Already processing a request. Please wait and check MetaMask.');
+      } else if (error.message?.includes('User denied') || error.message?.includes('denied')) {
+        setError('❌ You denied the request. Please try again and approve in MetaMask.');
+      } else if (error.message?.includes('rejected the connection')) {
+        setError('❌ You rejected the connection request. Please try again.');
+      } else if (error.message?.includes('network')) {
+        setError('❌ Network error. Please check your internet connection and try again.');
+      } else if (!window.ethereum) {
+        setError('❌ MetaMask not detected. Please install MetaMask extension.');
       } else {
-        setError(err.message || 'Failed to connect wallet. Please try again.');
+        // Generic error with more details
+        const errorMsg = error.message || 'Unknown error occurred';
+        setError(`❌ ${errorMsg}`);
+        console.error('Full error details:', err);
       }
     } finally {
       setIsLoading(false);

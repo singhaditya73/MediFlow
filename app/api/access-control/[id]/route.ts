@@ -9,12 +9,12 @@ export async function PATCH(
 ) {
   try {
     const session = await getServerSession();
-    if (!session || !session.user?.email) {
+    if (!session || !session.user?.name) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const user = await prismaClient.user.findUnique({
-      where: { email: session.user.email },
+    const user = await prismaClient.user.findFirst({
+      where: { walletAddress: session.user.name },
     });
 
     if (!user) {
@@ -22,7 +22,7 @@ export async function PATCH(
     }
 
     const body = await req.json();
-    const { isActive, accessLevel, expiresAt } = body;
+    const { isActive, accessLevel, expiresAt, blockchainTxHash } = body;
     const accessId = params.id;
 
     // Verify user owns the access control
@@ -54,7 +54,7 @@ export async function PATCH(
         receiver: {
           select: {
             id: true,
-            email: true,
+            walletAddress: true,
             name: true,
           },
         },
@@ -67,10 +67,12 @@ export async function PATCH(
         userId: user.id,
         recordId: existingAccess.recordId,
         action: isActive ? "grant_access" : "revoke_access",
+        blockchainTxHash: blockchainTxHash || null,
         metadata: {
           accessId: accessId,
           receiverId: existingAccess.receiverId,
           changes: { isActive, accessLevel, expiresAt },
+          timestamp: new Date().toISOString(),
         },
       },
     });
@@ -95,12 +97,12 @@ export async function DELETE(
 ) {
   try {
     const session = await getServerSession();
-    if (!session || !session.user?.email) {
+    if (!session || !session.user?.name) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const user = await prismaClient.user.findUnique({
-      where: { email: session.user.email },
+    const user = await prismaClient.user.findFirst({
+      where: { walletAddress: session.user.name },
     });
 
     if (!user) {
@@ -138,6 +140,7 @@ export async function DELETE(
         metadata: {
           accessId: accessId,
           receiverId: existingAccess.receiverId,
+          timestamp: new Date().toISOString(),
         },
       },
     });

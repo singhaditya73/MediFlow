@@ -13,6 +13,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Textarea } from "@/components/ui/textarea"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { TransactionDetails } from "@/components/transaction-details"
 import { uploadToIPFS } from "@/lib/ipfs"
 import { ethers } from "ethers"
 
@@ -35,6 +36,14 @@ function UploadPageContent() {
   const [textInput, setTextInput] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+  const [transactionDetails, setTransactionDetails] = useState<{
+    transactionHash: string;
+    gasUsed: string;
+    blockNumber: number;
+    blockHash: string;
+    blockTime: string;
+    timestamp: number;
+  } | null>(null)
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
@@ -132,11 +141,37 @@ function UploadPageContent() {
       }
       
       const provider = new ethers.BrowserProvider(window.ethereum)
+      
+      // Check network
+      const network = await provider.getNetwork()
+      const chainId = Number(network.chainId)
+      console.log("Connected to network:", chainId)
+      
+      // Verify correct network (31337 = localhost, 11155111 = Sepolia)
+      if (chainId !== 31337 && chainId !== 11155111) {
+        throw new Error(
+          `Wrong network detected. Please switch MetaMask to:\n` +
+          `• Localhost (Chain ID: 31337) for local testing, or\n` +
+          `• Sepolia Testnet (Chain ID: 11155111) for testnet`
+        )
+      }
+      
       const signer = await provider.getSigner()
 
-      // Get contract addresses
-      const ACCESS_CONTROL_ADDRESS = process.env.NEXT_PUBLIC_ACCESS_CONTROL_CONTRACT || '0x5FbDB2315678afecb367f032d93F642f64180aa3'
-      const AUDIT_LOG_ADDRESS = process.env.NEXT_PUBLIC_AUDIT_LOG_CONTRACT || '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512'
+      // Get contract addresses based on network
+      let ACCESS_CONTROL_ADDRESS, AUDIT_LOG_ADDRESS;
+      
+      if (chainId === 11155111) {
+        // Sepolia addresses
+        ACCESS_CONTROL_ADDRESS = '0xFA7d82c7B461c6535861cb2306e22a50eacc0D45'
+        AUDIT_LOG_ADDRESS = '0x62BCb433f042873D8CB1B13180b96192E2A176A1'
+        console.log("🌐 Using Sepolia testnet contracts")
+      } else {
+        // Localhost addresses
+        ACCESS_CONTROL_ADDRESS = process.env.NEXT_PUBLIC_ACCESS_CONTROL_CONTRACT || '0x5FbDB2315678afecb367f032d93F642f64180aa3'
+        AUDIT_LOG_ADDRESS = process.env.NEXT_PUBLIC_AUDIT_LOG_CONTRACT || '0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512'
+        console.log("🔧 Using localhost contracts")
+      }
 
       // Connect to contracts
       const accessControl = new ethers.Contract(
@@ -152,31 +187,95 @@ function UploadPageContent() {
       )
 
       console.log("📤 Registering on blockchain...")
-      const registerTx = await accessControl.registerRecord(recordId, ipfsResult.hash)
-      console.log("⏳ Transaction sent:", registerTx.hash)
       
-      const receipt = await registerTx.wait()
-      const transactionHash = receipt.hash
-      const blockNumber = receipt.blockNumber
+      // Validate contract connection
+      if (!accessControl || !auditLog) {
+        throw new Error('Failed to connect to smart contracts. Please refresh and try again.');
+      }
       
-      console.log("✅ Blockchain registration confirmed!")
-      console.log("🧾 Block:", blockNumber)
-      console.log("🧾 Tx:", transactionHash)
+      // Check wallet balance before transaction
+      const balance = await provider.getBalance(await signer.getAddress());
+      if (balance === 0n) {
+        throw new Error(
+          '❌ Insufficient funds. Your wallet has 0 ETH.\n\n' +
+          (chainId === 11155111 
+            ? 'Get free Sepolia ETH from: https://sepoliafaucet.com'
+            : 'Please add ETH to your localhost wallet')
+        );
+      }
+      
+      let registerTx, receipt, transactionHash, blockNumber, block;
+      
+      try {
+        registerTx = await accessControl.registerRecord(recordId, ipfsResult.hash)
+        console.log("⏳ Transaction sent:", registerTx.hash)
+        
+        receipt = await registerTx.wait()
+        transactionHash = receipt.hash
+        blockNumber = receipt.blockNumber
+        
+        // Get block details
+        block = await provider.getBlock(blockNumber)
+        
+        console.log("✅ Blockchain registration confirmed!")
+        console.log("🧾 Block:", blockNumber)
+        console.log("🧾 Tx:", transactionHash)
+
+        // Store transaction details for display
+        setTransactionDetails({
+          transactionHash: receipt.hash,
+          gasUsed: receipt.gasUsed.toString(),
+          blockNumber: receipt.blockNumber,
+          blockHash: receipt.blockHash,
+          blockTime: new Date((block?.timestamp || 0) * 1000).toUTCString(),
+          timestamp: block?.timestamp || 0,
+        })
+      } catch (txError: any) {
+        console.error("❌ Transaction error:", txError)
+        
+        // Handle user rejection
+        if (txError.code === 'ACTION_REJECTED' || txError.code === 4001) {
+          throw new Error("Transaction rejected. You cancelled the transaction in MetaMask.")
+        }
+        
+        // Handle insufficient funds
+        if (txError.code === 'INSUFFICIENT_FUNDS') {
+          throw new Error("Insufficient funds. Please add more ETH to your wallet.")
+        }
+        
+        // Handle network errors
+        if (txError.message?.includes('network')) {
+          throw new Error("Network error. Please check your internet connection and try again.")
+        }
+        
+        // Handle wrong network
+        if (txError.message?.includes('chain') || txError.message?.includes('network')) {
+          throw new Error("Wrong network. Please switch to Sepolia testnet in MetaMask.")
+        }
+        
+        // Generic error
+        throw new Error(txError.reason || txError.message || "Transaction failed. Please try again.")
+      }
 
       // Log audit entry
-      console.log("📝 Logging audit...")
-      const auditTx = await auditLog.logAudit(
-        recordId,
-        'UPLOAD',
-        JSON.stringify({
-          fileName: uploadedFile ? uploadedFile.name : 'Clinical Text',
-          fileSize: ipfsResult.size,
-          ipfsHash: ipfsResult.hash
-        })
-      )
-          await auditTx.wait()
-          console.log("✅ Audit logged!")
-          console.log("✅ Audit log recorded")
+      try {
+        console.log("📝 Logging audit...")
+        const auditTx = await auditLog.logAudit(
+          recordId,
+          'UPLOAD',
+          JSON.stringify({
+            fileName: uploadedFile ? uploadedFile.name : 'Clinical Text',
+            fileSize: ipfsResult.size,
+            ipfsHash: ipfsResult.hash
+          })
+        )
+        await auditTx.wait()
+        console.log("✅ Audit logged!")
+        console.log("✅ Audit log recorded")
+      } catch (auditError) {
+        console.warn("⚠️ Audit log failed (non-critical):", auditError)
+        // Continue even if audit fails
+      }
 
       // Step 4: Save to localStorage
       const records = JSON.parse(localStorage.getItem(`records_${user.walletAddress}`) || '[]')
@@ -198,10 +297,16 @@ function UploadPageContent() {
       localStorage.setItem(`records_${user.walletAddress}`, JSON.stringify(records))
 
       console.log("✅ Record saved to localStorage")
-      console.log("🎉 Upload complete! Redirecting to records page...")
+      console.log("🎉 Upload complete!")
       
-      // Redirect to records page
-      router.push('/records')
+      // Show success message with transaction details (don't redirect immediately)
+      setError("")
+      setLoading(false)
+      
+      // Optional: Auto-redirect after 5 seconds
+      // setTimeout(() => {
+      //   router.push('/records')
+      // }, 5000)
       
     } catch (err) {
       console.error("❌ Upload error:", err)
@@ -315,6 +420,28 @@ function UploadPageContent() {
               {error && (
                 <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
                   <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
+                </div>
+              )}
+
+              {transactionDetails && (
+                <div className="mt-4">
+                  <TransactionDetails
+                    transactionHash={transactionDetails.transactionHash}
+                    gasUsed={transactionDetails.gasUsed}
+                    blockNumber={transactionDetails.blockNumber}
+                    blockHash={transactionDetails.blockHash}
+                    blockTime={transactionDetails.blockTime}
+                    timestamp={transactionDetails.timestamp}
+                    action="Clinical data uploaded"
+                  />
+                  <div className="mt-4 flex justify-end">
+                    <Button
+                      onClick={() => router.push('/records')}
+                      className="bg-gradient-to-r from-teal-500 to-blue-500 hover:from-teal-600 hover:to-blue-600 text-white border-0"
+                    >
+                      View My Records
+                    </Button>
+                  </div>
                 </div>
               )}
 

@@ -47,6 +47,33 @@ export async function uploadToIPFS(fhirData: unknown): Promise<IPFSUploadResult>
         },
       });
 
+      // Add timeout for upload (30 seconds)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+
+      try {
+        const response = await fetch('https://api.pinata.cloud/pinning/pinJSONToIPFS', {
+          method: 'POST',
+          headers,
+          body,
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(`Pinata upload failed: ${response.statusText} - ${JSON.stringify(errorData)}`);
+        }
+      } catch (fetchError: unknown) {
+        clearTimeout(timeoutId);
+        const error = fetchError as { name?: string; message?: string };
+        if (error.name === 'AbortError') {
+          throw new Error('IPFS upload timed out after 30 seconds. Please check your connection and try again.');
+        }
+        throw fetchError;
+      }
+
       const response = await fetch('https://api.pinata.cloud/pinning/pinJSONToIPFS', {
         method: 'POST',
         headers,
@@ -83,9 +110,24 @@ export async function uploadToIPFS(fhirData: unknown): Promise<IPFSUploadResult>
   } catch (error) {
     console.error('IPFS upload error:', error);
     
+    // Check if it's a network error
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage.includes('timed out') || errorMessage.includes('network') || errorMessage.includes('fetch')) {
+      throw new Error(
+        '❌ IPFS upload failed due to network issues.\n\n' +
+        'Please check your internet connection and try again.\n' +
+        'If the problem persists, Pinata service may be temporarily unavailable.'
+      );
+    }
+    
+    // For other errors in production, throw them
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error(`IPFS upload failed: ${errorMessage}`);
+    }
+    
     // Development fallback: Create mock hash
+    console.warn('⚠️ Using mock IPFS hash for development:', errorMessage);
     const mockHash = `Qm${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}`;
-    console.log('Using mock IPFS hash for development:', mockHash);
     
     return {
       hash: mockHash,
