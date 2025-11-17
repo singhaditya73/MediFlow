@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import {
   ArrowRight,
@@ -9,6 +11,7 @@ import {
   Zap,
 } from "lucide-react";
 import Image from "next/image";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -17,9 +20,17 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function Home() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    // Check if user is authenticated
+    const walletAddress = localStorage.getItem('walletAddress');
+    const user = localStorage.getItem('user');
+    setIsAuthenticated(!!(walletAddress && user));
+  }, []);
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-blue-50/20 dark:from-background dark:to-blue-950/10">
       <div className="absolute top-0 left-0 right-0 h-[50vh] bg-grid-pattern-light dark:bg-grid-pattern-dark opacity-5"></div>
@@ -86,10 +97,10 @@ export default function Home() {
               </CardHeader>
               <CardFooter className="pt-2">
                 <Link
-                  href="/signup"
+                  href={isAuthenticated ? "/upload" : "/signup"}
                   className="text-sm text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 font-medium flex items-center"
                 >
-                  Connect Wallet to Upload <ArrowRight className="ml-1 h-3 w-3" />
+                  {isAuthenticated ? "Upload Data" : "Connect Wallet to Upload"} <ArrowRight className="ml-1 h-3 w-3" />
                 </Link>
               </CardFooter>
             </Card>
@@ -110,10 +121,10 @@ export default function Home() {
               </CardHeader>
               <CardFooter className="pt-2">
                 <Link
-                  href="/signup"
+                  href={isAuthenticated ? "/records" : "/signup"}
                   className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium flex items-center"
                 >
-                  Connect Wallet to View <ArrowRight className="ml-1 h-3 w-3" />
+                  {isAuthenticated ? "View Records" : "Connect Wallet to View"} <ArrowRight className="ml-1 h-3 w-3" />
                 </Link>
               </CardFooter>
             </Card>
@@ -134,10 +145,10 @@ export default function Home() {
               </CardHeader>
               <CardFooter className="pt-2">
                 <Link
-                  href="/signup"
+                  href={isAuthenticated ? "/access-control" : "/signup"}
                   className="text-sm text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-medium flex items-center"
                 >
-                  Connect Wallet to Manage <ArrowRight className="ml-1 h-3 w-3" />
+                  {isAuthenticated ? "Manage Access" : "Connect Wallet to Manage"} <ArrowRight className="ml-1 h-3 w-3" />
                 </Link>
               </CardFooter>
             </Card>
@@ -319,8 +330,8 @@ export default function Home() {
               size="lg"
               className="bg-gradient-to-r from-teal-500 to-blue-500 hover:from-teal-600 hover:to-blue-600 text-white border-0"
             >
-              <Link href="/signup">
-                Connect Wallet to Get Started
+              <Link href={isAuthenticated ? "/dashboard" : "/signup"}>
+                {isAuthenticated ? "Go to Dashboard" : "Connect Wallet to Get Started"}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
