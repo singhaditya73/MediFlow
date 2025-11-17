@@ -7,11 +7,12 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "blockchain:node": "anvil",
-    "blockchain:build": "forge build",
-    "blockchain:test": "forge test -vvv",
-    "blockchain:deploy": "forge script script/Deploy.s.sol:Deploy --rpc-url http://localhost:8545 --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 --broadcast",
-    "blockchain:coverage": "forge coverage"
+    "blockchain:node": "wsl bash -c 'anvil --host 0.0.0.0 --port 8545'",
+    "blockchain:node:script": "wsl bash ./start-anvil-wsl.sh",
+    "blockchain:build": "wsl bash -c 'forge build'",
+    "blockchain:test": "wsl bash -c 'forge test -vvv'",
+    "blockchain:deploy": "wsl bash -c 'forge script script/Deploy.s.sol:Deploy --rpc-url http://localhost:8545 --private-key 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80 --broadcast'",
+    "blockchain:coverage": "wsl bash -c 'forge coverage'"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.18.0",

@@ -1,0 +1,9 @@
+{
+  "name": "Start Local Blockchain",
+  "scripts": {
+    "blockchain": "anvil",
+    "blockchain:verbose": "anvil --block-time 1",
+    "deploy": "forge script scripts/deploy.ts --rpc-url http://127.0.0.1:8545 --broadcast",
+    "dev:full": "concurrently \"npm:blockchain\" \"npm:dev\""
+  }
+}

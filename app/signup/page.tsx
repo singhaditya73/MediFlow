@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { WalletInfoBanner } from "@/components/wallet-info-banner";
 
 export default function SignupPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -39,10 +40,22 @@ export default function SignupPage() {
 
     try {
       // Check if Ethereum wallet is installed
-      if (!window.ethereum) {
-        setError('Please install MetaMask or another Ethereum wallet to continue');
+      if (typeof window === 'undefined') {
+        setError('Please use a web browser to connect your wallet');
         setIsLoading(false);
         return;
+      }
+
+      if (!window.ethereum) {
+        setError('MetaMask not detected. Please install MetaMask extension from metamask.io');
+        window.open('https://metamask.io/download/', '_blank');
+        setIsLoading(false);
+        return;
+      }
+
+      // Check if MetaMask is installed
+      if (!window.ethereum.isMetaMask) {
+        setError('Please use MetaMask wallet for the best experience');
       }
 
       // Request account access
@@ -58,6 +71,42 @@ export default function SignupPage() {
 
       const address = accounts[0];
       setWalletAddress(address);
+
+      // Switch to localhost network (Anvil runs on chainId 31337)
+      try {
+        await window.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: '0x7A69' }], // 31337 in hex
+        });
+      } catch (switchError: any) {
+        // This error code indicates that the chain has not been added to MetaMask
+        if (switchError.code === 4902) {
+          try {
+            await window.ethereum.request({
+              method: 'wallet_addEthereumChain',
+              params: [
+                {
+                  chainId: '0x7A69',
+                  chainName: 'Localhost 8545',
+                  rpcUrls: ['http://127.0.0.1:8545'],
+                  nativeCurrency: {
+                    name: 'Ether',
+                    symbol: 'ETH',
+                    decimals: 18,
+                  },
+                },
+              ],
+            });
+          } catch (addError) {
+            console.error('Failed to add network:', addError);
+            setError('Please manually add Localhost network to MetaMask (Chain ID: 31337, RPC: http://127.0.0.1:8545)');
+            setIsLoading(false);
+            return;
+          }
+        } else {
+          console.warn('Network switch error:', switchError);
+        }
+      }
 
       // Check if user has set name for this wallet before
       const savedName = localStorage.getItem(`userName_${address.toLowerCase()}`);
@@ -168,6 +217,8 @@ export default function SignupPage() {
             </CardHeader>
 
             <CardContent className="space-y-4">
+              <WalletInfoBanner />
+              
               {error && (
                 <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-3 rounded-md text-sm">
                   {error}
@@ -220,13 +271,23 @@ export default function SignupPage() {
                   <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 space-y-2">
                     <div className="flex items-center gap-2 text-blue-900 dark:text-blue-100 font-semibold">
                       <Wallet className="w-5 h-5" />
-                      Ethereum Wallets Supported
+                      MetaMask Required
                     </div>
                     <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1 ml-7">
-                      <li>• MetaMask (Recommended)</li>
-                      <li>• Coinbase Wallet</li>
-                      <li>• Any Ethereum-compatible wallet</li>
+                      <li>• Install MetaMask browser extension</li>
+                      <li>• Connects to local Ethereum network</li>
+                      <li>• Secure blockchain authentication</li>
                     </ul>
+                    {!window.ethereum && (
+                      <a
+                        href="https://metamask.io/download/"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm text-blue-600 dark:text-blue-400 underline mt-2 block"
+                      >
+                        → Download MetaMask
+                      </a>
+                    )}
                   </div>
 
                   <Button

@@ -86,10 +86,10 @@ export default function Home() {
               </CardHeader>
               <CardFooter className="pt-2">
                 <Link
-                  href="/upload"
+                  href="/signup"
                   className="text-sm text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300 font-medium flex items-center"
                 >
-                  Upload Data <ArrowRight className="ml-1 h-3 w-3" />
+                  Connect Wallet to Upload <ArrowRight className="ml-1 h-3 w-3" />
                 </Link>
               </CardFooter>
             </Card>
@@ -110,10 +110,10 @@ export default function Home() {
               </CardHeader>
               <CardFooter className="pt-2">
                 <Link
-                  href="/result"
+                  href="/signup"
                   className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium flex items-center"
                 >
-                  View Results <ArrowRight className="ml-1 h-3 w-3" />
+                  Connect Wallet to View <ArrowRight className="ml-1 h-3 w-3" />
                 </Link>
               </CardFooter>
             </Card>
@@ -134,10 +134,10 @@ export default function Home() {
               </CardHeader>
               <CardFooter className="pt-2">
                 <Link
-                  href="/access-control"
+                  href="/signup"
                   className="text-sm text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:hover:text-purple-300 font-medium flex items-center"
                 >
-                  Manage Access <ArrowRight className="ml-1 h-3 w-3" />
+                  Connect Wallet to Manage <ArrowRight className="ml-1 h-3 w-3" />
                 </Link>
               </CardFooter>
             </Card>

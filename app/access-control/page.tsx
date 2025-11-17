@@ -4,6 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { ArrowLeft, Info, Lock, Plus, Shield, User, Zap } from "lucide-react"
 
+import { ProtectedRoute } from "@/components/protected-route"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -18,6 +19,14 @@ const initialAccessList = [
 ]
 
 export default function AccessControlPage() {
+  return (
+    <ProtectedRoute>
+      <AccessControlPageContent />
+    </ProtectedRoute>
+  );
+}
+
+function AccessControlPageContent() {
   const [accessList, setAccessList] = useState(initialAccessList)
   const [newEmail, setNewEmail] = useState("")
 

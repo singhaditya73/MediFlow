@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { ProtectedRoute } from '@/components/protected-route';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { FileText, Download, ExternalLink, Upload, Search } from 'lucide-react';
@@ -22,6 +23,14 @@ interface FhirRecord {
 }
 
 export default function RecordsPage() {
+  return (
+    <ProtectedRoute>
+      <RecordsPageContent />
+    </ProtectedRoute>
+  );
+}
+
+function RecordsPageContent() {
   const [records, setRecords] = useState<FhirRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');

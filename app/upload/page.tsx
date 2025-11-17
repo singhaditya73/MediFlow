@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft, FileText, Upload, X, Zap, Loader2 } from "lucide-react"
 
+import { ProtectedRoute } from "@/components/protected-route"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -20,6 +21,14 @@ import MediFlowAccessControlABI from "@/lib/abis/MediFlowAccessControl.json"
 import MediFlowAuditLogABI from "@/lib/abis/MediFlowAuditLog.json"
 
 export default function UploadPage() {
+  return (
+    <ProtectedRoute>
+      <UploadPageContent />
+    </ProtectedRoute>
+  );
+}
+
+function UploadPageContent() {
   const router = useRouter()
   const [isDragging, setIsDragging] = useState(false)
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
