@@ -20,6 +20,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { FlowingLines } from "@/components/ui/flowing-lines";
 
 export default function Home() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -32,7 +33,7 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-blue-50/20 dark:from-background dark:to-blue-950/10">
+    <div className="min-h-screen bg-background">
       <div className="absolute top-0 left-0 right-0 h-[50vh] bg-grid-pattern-light dark:bg-grid-pattern-dark opacity-5"></div>
       <div className="container px-4 py-6 mx-auto relative z-10">
         <main className="py-12">
@@ -67,18 +68,9 @@ export default function Home() {
               </Button>
             </div>
           </section>
-          <div className="mt-12 relative">
-            <div className="absolute inset-0 bg-gradient-to-r from-teal-500/5 to-blue-500/5 dark:from-teal-500/10 dark:to-blue-500/10 rounded-3xl transform -skew-y-1"></div>
-            <div className="relative bg-card/50 backdrop-blur-sm border border-border rounded-3xl shadow-xl overflow-hidden">
-              <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-teal-500 to-blue-500"></div>
-              <Image
-                src="/images/pexels-pixabay-40568 (1).jpg"
-                alt="MediFlow Dashboard"
-                width={700}
-                height={350}
-                className="w-full h-64 object-cover rounded-b-3xl"
-              />
-            </div>
+          
+          <div className="mt-12 relative h-64">
+            <FlowingLines />
           </div>
 
           <section className="grid md:grid-cols-3 gap-8 mt-24">
@@ -155,22 +147,19 @@ export default function Home() {
             </Card>
           </section>
 
-          <section className="mt-24 max-w-5xl mx-auto">
+          <section className="mt-24">
             <div className="text-center mb-16">
               <h2 className="text-3xl font-bold text-foreground mb-4">
                 About MediFlow
               </h2>
               <div className="w-24 h-1 bg-gradient-to-r from-teal-500 to-blue-500 mx-auto mb-6"></div>
-              <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-                MediFlow is transforming healthcare data management by
-                standardizing unstructured clinical data into FHIR format. By
-                integrating Web3 technologies, we offer decentralized identity
-                management, enhanced data privacy, and immutable audit trails.
+              <p className="text-lg text-muted-foreground max-w-4xl mx-auto">
+                MediFlow is transforming healthcare data management by standardizing unstructured clinical data into FHIR format. By integrating Web3 technologies, we offer decentralized identity management, enhanced data privacy, and immutable audit trails.
               </p>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-12 items-center">
-              <div className="bg-card/50 backdrop-blur-sm border border-border rounded-2xl shadow-lg overflow-hidden">
+            <div className="grid md:grid-cols-5 gap-8 items-center">
+              <div className="md:col-span-2 bg-card/50 backdrop-blur-sm border border-border rounded-2xl shadow-lg overflow-hidden">
                 <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-teal-500 to-blue-500"></div>
                 <Image
                   src="/images/WhatsApp Image 2025-04-27 at 6.05.03 PM.jpeg"
@@ -180,18 +169,14 @@ export default function Home() {
                   className="w-full h-auto"
                 />
               </div>
-              <div className="space-y-6">
-                <p className="text-muted-foreground">
-                  Our platform empowers patients to control their health data
-                  while ensuring secure, interoperable data exchange among
-                  healthcare providers. Trust, transparency, and security are at
-                  the core of MediFlow, enabling a seamless healthcare
-                  experience for all.
+              <div className="md:col-span-3 space-y-6">
+                <p className="text-muted-foreground text-base leading-relaxed">
+                  Our platform empowers patients to control their health data while ensuring secure, interoperable data exchange among healthcare providers. Trust, transparency, and security are at the core of MediFlow, enabling a seamless healthcare experience for all.
                 </p>
 
-                <div className="space-y-4">
+                <div className="grid sm:grid-cols-2 gap-4">
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center mt-1">
+                    <div className="w-10 h-10 rounded-lg bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center flex-shrink-0 mt-1">
                       <Shield className="w-5 h-5 text-teal-600 dark:text-teal-400" />
                     </div>
                     <div>
@@ -199,14 +184,13 @@ export default function Home() {
                         Decentralized Identity
                       </h3>
                       <p className="text-muted-foreground text-sm">
-                        Web3 technology enables secure, patient-controlled
-                        digital identities for healthcare access.
+                        Web3 technology enables secure, patient-controlled digital identities for healthcare access.
                       </p>
                     </div>
                   </div>
 
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mt-1">
+                    <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0 mt-1">
                       <Database className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                     </div>
                     <div>
@@ -214,14 +198,13 @@ export default function Home() {
                         Immutable Audit Trails
                       </h3>
                       <p className="text-muted-foreground text-sm">
-                        Blockchain-based audit logs ensure transparent,
-                        tamper-proof records of all data access.
+                        Blockchain-based audit logs ensure transparent, tamper-proof records of all data access.
                       </p>
                     </div>
                   </div>
 
                   <div className="flex items-start gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mt-1">
+                    <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0 mt-1">
                       <Lock className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                     </div>
                     <div>
@@ -229,8 +212,21 @@ export default function Home() {
                         Enhanced Data Privacy
                       </h3>
                       <p className="text-muted-foreground text-sm">
-                        Advanced encryption and granular access controls protect
-                        sensitive health information.
+                        Advanced encryption and granular access controls protect sensitive health information.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center flex-shrink-0 mt-1">
+                      <FileText className="w-5 h-5 text-orange-600 dark:text-orange-400" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-foreground mb-1">
+                        FHIR Standards
+                      </h3>
+                      <p className="text-muted-foreground text-sm">
+                        Industry-standard FHIR format ensures seamless interoperability across healthcare systems.
                       </p>
                     </div>
                   </div>
@@ -246,21 +242,19 @@ export default function Home() {
             </div>
           </section>
 
-          <section className="mt-24 max-w-5xl mx-auto bg-gradient-to-r from-teal-50/50 to-blue-50/50 dark:from-teal-900/20 dark:to-blue-900/20 rounded-2xl p-8 border border-border shadow-lg">
-            <div className="grid md:grid-cols-2 gap-12 items-center">
-              <div className="space-y-6">
+          <section className="mt-24 bg-card/30 rounded-2xl p-12 border border-border shadow-lg">
+            <div className="grid md:grid-cols-5 gap-8 items-center">
+              <div className="md:col-span-3 space-y-6">
                 <h2 className="text-3xl font-bold text-foreground mb-4">
                   Why Choose MediFlow?
                 </h2>
-                <p className="text-muted-foreground">
-                  Our platform combines the latest in FHIR standards with
-                  cutting-edge Web3 technology to create a secure,
-                  patient-centric healthcare data ecosystem.
+                <p className="text-muted-foreground text-base leading-relaxed">
+                  Our platform combines the latest in FHIR standards with cutting-edge Web3 technology to create a secure, patient-centric healthcare data ecosystem.
                 </p>
 
                 <ul className="space-y-4">
                   <li className="flex items-start gap-3">
-                    <div className="w-6 h-6 rounded-full bg-gradient-to-r from-teal-500 to-blue-500 flex items-center justify-center mt-0.5 text-white font-bold text-xs">
+                    <div className="w-6 h-6 rounded-full bg-gradient-to-r from-teal-500 to-blue-500 flex items-center justify-center flex-shrink-0 mt-0.5 text-white font-bold text-xs">
                       1
                     </div>
                     <div>
@@ -268,13 +262,12 @@ export default function Home() {
                         FHIR R4 Compliance
                       </h3>
                       <p className="text-sm text-muted-foreground">
-                        Fully compliant with the latest FHIR R4 standards for
-                        maximum interoperability.
+                        Fully compliant with the latest FHIR R4 standards for maximum interoperability across healthcare systems.
                       </p>
                     </div>
                   </li>
                   <li className="flex items-start gap-3">
-                    <div className="w-6 h-6 rounded-full bg-gradient-to-r from-teal-500 to-blue-500 flex items-center justify-center mt-0.5 text-white font-bold text-xs">
+                    <div className="w-6 h-6 rounded-full bg-gradient-to-r from-teal-500 to-blue-500 flex items-center justify-center flex-shrink-0 mt-0.5 text-white font-bold text-xs">
                       2
                     </div>
                     <div>
@@ -282,13 +275,12 @@ export default function Home() {
                         HIPAA Compliance
                       </h3>
                       <p className="text-sm text-muted-foreground">
-                        Secure, HIPAA-compliant processing with end-to-end
-                        encryption.
+                        Secure, HIPAA-compliant processing with end-to-end encryption protecting patient data.
                       </p>
                     </div>
                   </li>
                   <li className="flex items-start gap-3">
-                    <div className="w-6 h-6 rounded-full bg-gradient-to-r from-teal-500 to-blue-500 flex items-center justify-center mt-0.5 text-white font-bold text-xs">
+                    <div className="w-6 h-6 rounded-full bg-gradient-to-r from-teal-500 to-blue-500 flex items-center justify-center flex-shrink-0 mt-0.5 text-white font-bold text-xs">
                       3
                     </div>
                     <div>
@@ -296,15 +288,14 @@ export default function Home() {
                         Web3 Integration
                       </h3>
                       <p className="text-sm text-muted-foreground">
-                        Blockchain technology ensures data integrity and
-                        transparent access logs.
+                        Blockchain technology ensures data integrity and transparent access logs for complete audit trails.
                       </p>
                     </div>
                   </li>
                 </ul>
               </div>
-              <div className="flex justify-center">
-                <div className="w-80 h-80 bg-card rounded-2xl shadow-xl border border-border flex items-center justify-center p-6 relative">
+              <div className="md:col-span-2 flex justify-center">
+                <div className="w-full max-w-md aspect-square bg-card rounded-2xl shadow-xl border border-border flex items-center justify-center p-6 relative">
                   <div className="absolute inset-0 bg-grid-pattern-light dark:bg-grid-pattern-dark opacity-5 rounded-2xl"></div>
                   <Image
                     src="/images/WhatsApp Image 2025-04-27 at 6.05.03 PM (1).jpeg"
@@ -339,18 +330,19 @@ export default function Home() {
           </section>
         </main>
 
-        <footer className="mt-16 py-6 border-t border-border">
-          <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-teal-400 to-blue-500 flex items-center justify-center">
-                <Zap className="w-4 h-4 text-white" />
+        <footer className="mt-16 py-4 border-t border-border">
+          <div className="max-w-7xl mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-teal-400 to-blue-500 flex items-center justify-center">
+                  <Zap className="w-3.5 h-3.5 text-white" />
+                </div>
+                <span className="text-base font-bold text-foreground">MediFlow</span>
               </div>
-              <span className="text-lg font-bold text-foreground">MediFlow</span>
+              <p className="text-sm text-muted-foreground">
+                © 2025 All rights reserved.
+              </p>
             </div>
-            
-            <p className="text-sm text-muted-foreground">
-              © 2025 MediFlow. All rights reserved.
-            </p>
             
             <a
               href="https://github.com/singhaditya73/MediFlow"
